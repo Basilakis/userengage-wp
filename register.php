@@ -1,15 +1,17 @@
 <?php
 /*
-Plugin Name: UserEngage for WordPress & RCP
-Plugin URI: http://creativeg.gr
-Description: Connect your WordPress Installation With WordPress & Restrict Content Pro
-Author: creativeG
-Author URI:http://creativeg.gr
+Plugin Name: Register
+Plugin URI:
+Description:
+Author: Rajiv Shakya
+Author URI:http://jyasha.com
 Version: 1.1.1
-License: GPLv3 or later
+License: GPLv2 or later
  */
 require 'Userengage.php';
-define('API_KEY', ''); // Your API KEY
+
+define('API_KEY', 'QB2gESzIXGJAHNw8PVPRXEAf0lujKGdbXgqjXTbI76Q2VOfO44ehbj2ShzKgvlgN');
+
 add_filter('cron_schedules', 'isa_add_every_ten_minutes');
 function isa_add_every_ten_minutes($schedules)
 {
@@ -24,8 +26,7 @@ if (!wp_next_scheduled('my_ten_min_event')) {
 }
 add_action('my_ten_min_event', 'register_schedule');
 // add_action('plugins_loaded', 'register_schedule');
-function register_schedule()
-{
+function register_schedule() {
     // $members = rcp_get_members();
     $users = get_users();
     if (!empty($users)) {
@@ -50,10 +51,12 @@ function register_schedule()
                 }
                 $userExists       = findUserByEmail($user->user_email);
                 $userEngageUserId = $userExists->id;
+                // addToRegisteredList($userInfo->user_email);
 
             } else {
                 $userEngageUserId = $userExists->id;
             }
+            addToRegisteredList($userInfo->user_email); //adds if not already registered
         	$member = rcp_get_members( 'active', '', '', '', '', '', $user->user_email);
         	if ($member) {
         		$member = $member[0];
@@ -92,20 +95,29 @@ function register_schedule()
                         // echo $e->getMessage();
                     }
                 }
-
-            }else{
-                addToRegisteredList($userInfo->user_email);
             }
-
+            
             // EDD Product Validation
             $productArray = array(4915, 2906, 2760, 2176);
             foreach ($productArray as $productId) {
                 if (edd_has_user_purchased($user->ID, $productId)) {
-                    addToProductList($userEngageUserId);
-                }
-            }
-        }
+                    try
+                    {
+                        $ue = new UserEngage(API_KEY);
+                        $ue->setEndpoint('users/' . $userExists->id . '/set_multiple_attributes');
+                        $ue->setMethod('POST');
+                        // Add the required fields:
+                        $ue->addField('edd_total', cg_edd_get_total_spent_for_customer($userInfo->ID));
+                        // print_r( $ue->send() );
+                        $ue->send();
 
+                    } catch (Exception $e) {
+                        // echo $e->getMessage();
+                    }
+                    addToProductList($userEngageUserId);
+                    }
+                }
+        }
     }
 }
 // echo '<pre>'; print_r( _get_cron_array() ); echo '</pre>';
@@ -113,14 +125,25 @@ function addToRegisteredList($email)
 {
     $exist  = findUserByEmail($email);
     $userId = $exist->id;
+    $alreadyRegistered = false;
     try
-    {
-        $ue = new UserEngage(API_KEY);
-        $ue->setEndpoint('users/' . $userId . '/add_to_list');
-        $ue->setMethod('POST');
-        // Add the required fields:
-        $ue->addField('list', 1314);
-        $ue->send();
+    {   
+        if($exist->lists){
+            foreach($exist->lists as $list) {
+                if ($list->id == 1314) {
+                    $alreadyRegistered = true;
+                }
+            }
+        }
+        if ($alreadyRegistered == false) {
+           $ue = new UserEngage(API_KEY);
+           $ue->setEndpoint('users/' . $userId . '/add_to_list');
+           $ue->setMethod('POST');
+           // Add the required fields:
+           $ue->addField('list', 1314);
+           $ue->send(); 
+        }
+        
     } catch (Exception $e) {
         // echo $e->getMessage();
     }
