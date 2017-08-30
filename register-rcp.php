@@ -1,16 +1,7 @@
 <?php
-/*
-Plugin Name: Register
-Plugin URI:
-Description:
-Author: Rajiv Shakya
-Author URI:http://jyasha.com
-Version: 1.1.1
-License: GPLv2 or later
- */
 require 'Userengage.php';
 
-define('API_KEY', 'QB2gESzIXGJAHNw8PVPRXEAf0lujKGdbXgqjXTbI76Q2VOfO44ehbj2ShzKgvlgN');
+define('API_KEY', '');
 
 add_filter('cron_schedules', 'isa_add_every_ten_minutes');
 function isa_add_every_ten_minutes($schedules)
@@ -29,6 +20,7 @@ add_action('my_ten_min_event', 'register_schedule');
 function register_schedule() {
     // $members = rcp_get_members();
     $users = get_users();
+
     if (!empty($users)) {
         foreach ($users as $user) {
             $userExists = findUserByEmail($user->user_email);
@@ -96,27 +88,6 @@ function register_schedule() {
                     }
                 }
             }
-            
-            // EDD Product Validation
-            $productArray = array(4915, 2906, 2760, 2176);
-            foreach ($productArray as $productId) {
-                if (edd_has_user_purchased($user->ID, $productId)) {
-                    try
-                    {
-                        $ue = new UserEngage(API_KEY);
-                        $ue->setEndpoint('users/' . $userExists->id . '/set_multiple_attributes');
-                        $ue->setMethod('POST');
-                        // Add the required fields:
-                        $ue->addField('edd_total', cg_edd_get_total_spent_for_customer($userInfo->ID));
-                        // print_r( $ue->send() );
-                        $ue->send();
-
-                    } catch (Exception $e) {
-                        // echo $e->getMessage();
-                    }
-                    addToProductList($userEngageUserId);
-                    }
-                }
         }
     }
 }
@@ -130,7 +101,7 @@ function addToRegisteredList($email)
     {   
         if($exist->lists){
             foreach($exist->lists as $list) {
-                if ($list->id == 1314) {
+                if ($list->id == 1142) {
                     $alreadyRegistered = true;
                 }
             }
@@ -140,7 +111,7 @@ function addToRegisteredList($email)
            $ue->setEndpoint('users/' . $userId . '/add_to_list');
            $ue->setMethod('POST');
            // Add the required fields:
-           $ue->addField('list', 1314);
+           $ue->addField('list', 1142);
            $ue->send(); 
         }
         
@@ -158,7 +129,7 @@ function addToUnRegisteredList($email)
         $ue->setEndpoint('users/' . $userId . '/remove_from_list');
         $ue->setMethod('POST');
         // Add the required fields:
-        $ue->addField('list', 1312);
+        $ue->addField('list', 1141);
         $ue->send();
     } catch (Exception $e) {
         // echo $e->getMessage();
@@ -169,7 +140,7 @@ function addToUnRegisteredList($email)
         $ue = new UserEngage(API_KEY);
         $ue->setEndpoint('users/' . $userId . '/add_to_list');
         $ue->setMethod('POST');
-        $ue->addField('list', 1247); //this list is not yet created
+        $ue->addField('list', 1144); //this list is not yet created
         $ue->send();
     } catch (Exception $e) {
         // echo $e->getMessage();
@@ -185,7 +156,7 @@ function addToActiveRegisteredList($email)
         $ue->setEndpoint('users/' . $userId . '/remove_from_list');
         $ue->setMethod('POST');
         // Add the required fields:
-        $ue->addField('list', 1247);
+        $ue->addField('list', 1144);
         $ue->send();
     } catch (Exception $e) {
         // echo $e->getMessage();
@@ -197,27 +168,12 @@ function addToActiveRegisteredList($email)
         $ue = new UserEngage(API_KEY);
         $ue->setEndpoint('users/' . $userId . '/add_to_list');
         $ue->setMethod('POST');
-        $ue->addField('list', 1312); //this list is not yet created
+        $ue->addField('list', 1141); //this list is not yet created
         $ue->send();
     } catch (Exception $e) {
         // echo $e->getMessage();
     }
-}
-function addToProductList($id)
-{
-    $userId = $id;
-    try
-    {
-        $ue = new UserEngage(API_KEY);
-        $ue->setEndpoint('users/' . $userId . '/add_to_list');
-        $ue->setMethod('POST');
-        // Add the required fields:
-        $ue->addField('list', 1315);
-        $ue->send();
-    } catch (Exception $e) {
-        // echo $e->getMessage();
-    }
-}
+
 function findUserByEmail($email)
 {
     try
